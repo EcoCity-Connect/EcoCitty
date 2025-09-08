@@ -5,8 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EcoCity Connect</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -26,9 +30,13 @@
                 <a href="#feedback" class="nav-link text-gray-600">Feedback</a>
             </div>
             <button class="md:hidden" id="mobile-menu-button">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                          d="M4 6h16M4 12h16m-7 6h7"></path>
+                </svg>
             </button>
         </nav>
+
         <!-- Mobile Menu -->
         <div class="hidden md:hidden" id="mobile-menu">
             <a href="#transport" class="block py-2 px-4 text-sm hover:bg-gray-100">Transport</a>
@@ -41,107 +49,111 @@
 
     <!-- Main Content -->
     <main class="container mx-auto px-6 py-12">
+
+        <!-- Hero Section -->
         <section class="text-center mb-16">
             <h1 class="text-4xl md:text-5xl font-bold mb-4">Smart Services for a Sustainable City</h1>
             <p class="text-lg text-gray-600 max-w-3xl mx-auto">Real-time insights into your city's public services to help you live smarter and greener.</p>
         </section>
 
-        <!-- Services Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <!-- Public Transport -->
-            <div id="transport" class="card p-6 col-span-1 md:col-span-2 lg:col-span-3">
-                <h2 class="text-2xl font-bold mb-4">Real-time Public Transport</h2>
-                <div class="flex flex-col md:flex-row gap-4">
-                    <div class="flex-grow" id="map"></div>
-                    <div class="md:w-1/3 lg:w-1/4 bg-gray-50 p-4 rounded-lg">
-                        <h3 class="font-bold text-lg mb-2">Live Status</h3>
-                        <div id="transport-status-list" class="space-y-3">
-                            <p class="text-gray-500">Simulating live vehicle data...</p>
-                        </div>
+        <!-- Real-time Public Transport Section -->
+        <section id="transport" class="card p-6 mb-12">
+            <h2 class="text-2xl font-bold mb-4">Real-time Public Transport</h2>
+            <div class="flex flex-col md:flex-row gap-4">
+                <!-- Map Container -->
+                <div id="map" class="flex-grow h-96 rounded-lg shadow-md"></div>
+
+                <!-- Live Status Panel -->
+                <div class="md:w-1/3 lg:w-1/4 bg-gray-50 p-4 rounded-lg shadow-inner">
+                    <h3 class="font-bold text-lg mb-2">Live Status</h3>
+                    <div id="transport-status-list" class="space-y-3">
+                        <p class="text-gray-500">Simulating live vehicle data...</p>
                     </div>
                 </div>
             </div>
+        </section>
 
-            <!-- Waste Collection -->
-            <div id="waste" class="card p-6">
-                <h2 class="text-2xl font-bold mb-4">Waste Collection Schedules</h2>
-                <p class="text-gray-600 mb-4">Find your neighborhood's collection days. Based on general MCD schedules.</p>
-                <div class="flex space-x-2">
-                    <input type="text" id="neighborhood-input" placeholder="e.g., Karol Bagh, Saket" class="flex-grow p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                    <button id="search-waste-btn" class="bg-emerald-500 text-white px-4 py-2 rounded-lg hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">Search</button>
-                </div>
-                <div id="waste-results" class="mt-4 p-4 bg-gray-50 rounded-lg min-h-[100px]">
-                     <p class="text-gray-500">Enter a neighborhood to see the schedule.</p>
-                </div>
+        <!-- Waste Collection Section -->
+        <section id="waste" class="card p-6 mb-12">
+            <h2 class="text-2xl font-bold mb-4">Waste Collection Schedules</h2>
+            <p class="text-gray-600 mb-4">Find your neighborhood's collection days. Based on general MCD schedules.</p>
+            <div class="flex space-x-2">
+                <input type="text" id="neighborhood-input" placeholder="e.g., Karol Bagh, Saket" 
+                       class="flex-grow p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <button id="search-waste-btn" class="bg-emerald-500 text-white px-4 py-2 rounded-lg hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">Search</button>
             </div>
-
-            <!-- Safe Route Planner -->
-            <div id="safety" class="card p-6 col-span-1 md:col-span-1 lg:col-span-2">
-                <h2 class="text-2xl font-bold mb-4">Safe Route Planner</h2>
-                <p class="text-gray-600 mb-4">Discover safe, well-lit routes for walking and cycling in your area.</p>
-                <div id="safetymap"></div>
+            <div id="waste-results" class="mt-4 p-4 bg-gray-50 rounded-lg min-h-[100px]">
+                <p class="text-gray-500">Enter a neighborhood to see the schedule.</p>
             </div>
+        </section>
 
-            <!-- Carbon Footprint Calculator -->
-            <div id="carbon" class="card p-6 col-span-1 md:col-span-2 lg:col-span-3">
-                <h2 class="text-2xl font-bold mb-4">Carbon Footprint Calculator</h2>
-                <div class="bg-gray-50 p-6 rounded-lg">
-                    <!-- Tabs -->
-                    <div class="flex space-x-2 mb-4">
-                        <button class="tab-btn active" data-tab="commute">Commute</button>
-                        <button class="tab-btn" data-tab="energy">Domestic Energy Consumption</button>
-                    </div>
-                    <!-- Commute Tab Content -->
-                    <div id="commute" class="tab-content active grid-cols-1 md:grid-cols-3 gap-6">
-                        <div>
-                            <label for="distance" class="block text-sm font-medium text-gray-700">Daily Commute Distance (km)</label>
-                            <input type="number" id="distance" placeholder="e.g., 15" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
-                        </div>
-                        <div>
-                            <label for="transport-mode" class="block text-sm font-medium text-gray-700">Mode of Transport</label>
-                            <select id="transport-mode" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
-                                <option value="150">Car (Petrol)</option>
-                                <option value="40">Bus</option>
-                                <option value="21">Metro</option>
-                                <option value="110">Motorbike</option>
-                                <option value="0">Cycling</option>
-                                <option value="0">Walking</option>
-                            </select>
-                        </div>
-                    </div>
-                    <!-- Energy Tab Content -->
-                    <div id="energy" class="tab-content grid-cols-1 md:grid-cols-3 gap-6">
-                       <div>
-                            <label for="electricity" class="block text-sm font-medium text-gray-700">Monthly Electricity (kWh)</label>
-                            <input type="number" id="electricity" placeholder="e.g., 250" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
-                        </div>
-                    </div>
-                     <div class="mt-6 flex justify-center">
-                        <button id="calculate-carbon-btn" class="bg-emerald-500 text-white px-8 py-2 rounded-lg hover:bg-emerald-600">Calculate Total Footprint</button>
-                    </div>
-                    <div id="carbon-result" class="mt-6 text-center"></div>
+        <!-- Safe Route Planner Section -->
+        <section id="safety" class="card p-6 mb-12">
+            <h2 class="text-2xl font-bold mb-4">Safe Route Planner</h2>
+            <p class="text-gray-600 mb-4">Discover safe, well-lit routes for walking and cycling in your area.</p>
+            <div id="safetymap" class="h-96 rounded-lg shadow-md"></div>
+        </section>
+
+        <!-- Carbon Footprint Calculator Section -->
+        <section id="carbon" class="card p-6 mb-12">
+            <h2 class="text-2xl font-bold mb-4">Carbon Footprint Calculator</h2>
+            <div class="bg-gray-50 p-6 rounded-lg">
+                <!-- Tabs -->
+                <div class="flex space-x-2 mb-4">
+                    <button class="tab-btn active" data-tab="commute">Commute</button>
+                    <button class="tab-btn" data-tab="energy">Domestic Energy Consumption</button>
                 </div>
-            </div>
-
-            <!-- Citizen Feedback -->
-            <div id="feedback" class="card p-6 col-span-1 md:col-span-2 lg:col-span-3">
-                 <h2 class="text-2xl font-bold mb-4">Citizen Feedback</h2>
-                <p class="text-gray-600 mb-4">See an issue? Report it here and help us improve our city together.</p>
-                <form id="feedback-form">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <input type="text" placeholder="Your Name" class="p-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                        <select class="p-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                            <option>Pothole</option>
-                            <option>Broken Streetlight</option>
-                            <option>Waste Not Collected</option>
-                            <option>Other</option>
+                <!-- Commute Tab Content -->
+                <div id="commute" class="tab-content active grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label for="distance" class="block text-sm font-medium text-gray-700">Daily Commute Distance (km)</label>
+                        <input type="number" id="distance" placeholder="e.g., 15" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label for="transport-mode" class="block text-sm font-medium text-gray-700">Mode of Transport</label>
+                        <select id="transport-mode" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
+                            <option value="150">Car (Petrol)</option>
+                            <option value="40">Bus</option>
+                            <option value="21">Metro</option>
+                            <option value="110">Motorbike</option>
+                            <option value="0">Cycling</option>
+                            <option value="0">Walking</option>
                         </select>
                     </div>
-                    <textarea placeholder="Describe the issue..." rows="4" class="p-2 border border-gray-300 rounded-lg w-full mb-4 focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
-                    <button type="submit" class="bg-emerald-500 text-white px-6 py-2 rounded-lg hover:bg-emerald-600">Submit Report</button>
-                </form>
+                </div>
+                <!-- Energy Tab Content -->
+                <div id="energy" class="tab-content hidden grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label for="electricity" class="block text-sm font-medium text-gray-700">Monthly Electricity (kWh)</label>
+                        <input type="number" id="electricity" placeholder="e.g., 250" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-center">
+                    <button id="calculate-carbon-btn" class="bg-emerald-500 text-white px-8 py-2 rounded-lg hover:bg-emerald-600">Calculate Total Footprint</button>
+                </div>
+                <div id="carbon-result" class="mt-6 text-center"></div>
             </div>
-        </div>
+        </section>
+
+        <!-- Citizen Feedback Section -->
+        <section id="feedback" class="card p-6 mb-12">
+            <h2 class="text-2xl font-bold mb-4">Citizen Feedback</h2>
+            <p class="text-gray-600 mb-4">See an issue? Report it here and help us improve our city together.</p>
+            <form id="feedback-form">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <input type="text" placeholder="Your Name" class="p-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <select class="p-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option>Pothole</option>
+                        <option>Broken Streetlight</option>
+                        <option>Waste Not Collected</option>
+                        <option>Other</option>
+                    </select>
+                </div>
+                <textarea placeholder="Describe the issue..." rows="4" class="p-2 border border-gray-300 rounded-lg w-full mb-4 focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
+                <button type="submit" class="bg-emerald-500 text-white px-6 py-2 rounded-lg hover:bg-emerald-600">Submit Report</button>
+            </form>
+        </section>
+
     </main>
 
     <!-- Footer -->
@@ -150,6 +162,41 @@
             <p>&copy; 2024 EcoCity Connect. Building sustainable communities together.</p>
         </div>
     </footer>
+
+    <!-- Scripts -->
+    <script>
+        // Mobile menu toggle
+        const menuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+        menuButton.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        // Leaflet Map for Real-time Public Transport
+        var map = L.map('map').setView([28.6139, 77.2090], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        L.marker([28.6139, 77.2090]).addTo(map).bindPopup('City Center').openPopup();
+
+        // Leaflet Map for Safe Route Planner
+        var safetyMap = L.map('safetymap').setView([28.6139, 77.2090], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(safetyMap);
+
+        // Tabs for Carbon Footprint Calculator
+        const tabs = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                const target = tab.dataset.tab;
+                tabContents.forEach(tc => tc.id === target ? tc.classList.remove('hidden') : tc.classList.add('hidden'));
+            });
+        });
+    </script>
 
     <script src="script.js"></script>
 </body>
