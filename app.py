@@ -54,18 +54,14 @@ def home():
 
 @app.route('/api/search-trains', methods=['GET'])
 def search_trains():
-    """Search trains between two stations"""
     from_station = request.args.get('from_station', '').upper()
     to_station = request.args.get('to_station', '').upper()
-    
-    if not from_station or not to_station:
-        return jsonify({'error': 'Both from_station and to_station are required'}), 400
-    
-    # Get trains between stations
+    print(f"Search trains request: from {from_station} to {to_station}")
     data = make_api_request('getTrainsBetweenStations', {
         'fromStationCode': from_station,
         'toStationCode': to_station
     })
+    print("RapidAPI response:", data)
     
     # Add station coordinates for map plotting
     result = {
