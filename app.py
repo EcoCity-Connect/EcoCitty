@@ -2,13 +2,17 @@ from flask import Flask, jsonify, render_template, request
 from flask_cors import CORS
 import requests
 import json
+import os
+from dotenv import load_dotenv
+
+load_dotenv() # Load environment variables from .env file
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
-# Your RapidAPI configuration
+# Your RapidAPI configuration (now secure)
 API_CONFIG = {
-    'key': 'f630d6821amsh9d3c70f920c08f8p121b52jsn78417474120b',
+    'key': os.getenv('RAPIDAPI_KEY'),
     'host': 'irctc1.p.rapidapi.com',
     'base_url': 'https://irctc1.p.rapidapi.com/api/v3'
 }
@@ -30,6 +34,8 @@ def make_api_request(endpoint, params=None):
         return {'error': str(e), 'status': False}
 
 # Major Indian railway stations with coordinates
+# NOTE: This remains the biggest limitation. For full functionality,
+# this list would need to be expanded significantly.
 MAJOR_STATIONS = {
     'NDLS': {'name': 'New Delhi', 'lat': 28.6448, 'lng': 77.2097},
     'BCT': {'name': 'Mumbai Central', 'lat': 18.9696, 'lng': 72.8205},
@@ -221,3 +227,4 @@ def health_check():
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
+

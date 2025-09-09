@@ -8,8 +8,21 @@ const neighborhoodInput = document.getElementById('neighborhood-input');
 const searchWasteBtn = document.getElementById('search-waste-btn');
 const wasteResultsDiv = document.getElementById('waste-results');
 
-// Empty object (no fake data)
-const wasteSchedules = {};
+// ADDED SAMPLE DATA TO MAKE THE FEATURE WORK
+const wasteSchedules = {
+    'karol bagh': {
+        general: 'Monday, Thursday',
+        recycling: 'Thursday'
+    },
+    'saket': {
+        general: 'Tuesday, Friday',
+        recycling: 'Friday'
+    },
+    'dwarka': {
+        general: 'Wednesday, Saturday',
+        recycling: 'Wednesday'
+    }
+};
 
 function searchSchedule() {
     const query = neighborhoodInput.value.trim().toLowerCase();
@@ -400,7 +413,7 @@ function showRailwayModal(trainNumber, content) {
 function displayLiveStatusInModal(trainNumber, statusData) {
     let content = '';
     
-    if (!statusData || !statusData.current_station) {
+    if (!statusData || !statusData.current_station_name) {
         content = `
             <div style="text-align: center; padding: 20px;">
                 <p>❌ No live tracking data available for train ${trainNumber}</p>
@@ -408,28 +421,28 @@ function displayLiveStatusInModal(trainNumber, statusData) {
             </div>
         `;
     } else {
-        const delay = statusData.delay || 'On time';
-        const currentStation = statusData.current_station || 'Unknown';
-        const nextStation = statusData.next_station || 'Unknown';
-        const speed = statusData.speed || 'N/A';
+        const delay = statusData.delay_minutes ? `${statusData.delay_minutes} mins late` : 'On time';
+        const currentStation = statusData.current_station_name || 'Unknown';
+        const nextStation = statusData.next_station_name || 'N/A';
+        const speed = statusData.current_speed || '0';
         
         content = `
             <div style="space-y: 15px;">
                 <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
                     <h3 style="color: #667eea; margin-bottom: 10px;">📍 Current Location</h3>
                     <p><strong>Station:</strong> ${currentStation}</p>
-                    <p><strong>Status:</strong> <span style="color: ${delay === 'On time' ? '#28a745' : '#dc3545'};">${delay}</span></p>
+                    <p><strong>Status:</strong> <span style="color: ${delay === 'On time' ? '#28a745' : '#dc3545'}; font-weight: bold;">${delay}</span></p>
                 </div>
                 
                 <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                    <h3 style="color: #1976d2; margin-bottom: 10px;">🎯 Next Station</h3>
+                    <h3 style="color: #1976d2; margin-bottom: 10px;">🎯 Next Stop</h3>
                     <p><strong>Station:</strong> ${nextStation}</p>
                     <p><strong>Speed:</strong> ${speed} km/h</p>
                 </div>
                 
-                <div style="text-align: center; padding: 20px;">
+                <div style="text-align: center; padding-top: 20px;">
                     <button onclick="refreshTrainStatus('${trainNumber}')" 
-                            style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer;">
+                            style="background: #10b981; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: bold;">
                         🔄 Refresh Status
                     </button>
                 </div>
@@ -452,7 +465,7 @@ async function getLiveStationInfo() {
     const resultsDiv = document.getElementById('railway-results');
     
     if (!stationCode) {
-        resultsDiv.innerHTML = '<p class="text-red-500">Please enter a station code in the "From Station" field</p>';
+        resultsDiv.innerHTML = '<p class="text-red-500">Please enter a station code in the "From / Live Station" field</p>';
         return;
     }
 
@@ -478,8 +491,8 @@ function displayLiveStationData(stationData, stationCode) {
     let html = `<h3 class="font-bold text-lg mb-3">📡 Live Trains at ${stationCode}</h3>`;
     
     stationData.slice(0, 15).forEach((train) => {
-        const status = train.delay ? `Delayed by ${train.delay}` : 'On Time';
-        const statusClass = train.delay ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800';
+        const status = train.delay_minutes ? `Delayed by ${train.delay_minutes} min` : 'On Time';
+        const statusClass = train.delay_minutes ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800';
         
         html += `
             <div class="train-card" onclick="showTrainLiveStatus('${train.train_number}')">
@@ -491,14 +504,14 @@ function displayLiveStationData(stationData, stationCode) {
                 </div>
                 <div class="grid grid-cols-2 gap-2 text-sm">
                     <div class="bg-gray-100 p-2 rounded">
-                        <strong>Platform</strong><br>
-                        ${train.platform || 'TBD'}<br>
-                        ${train.scheduled_time || 'N/A'}
+                        <strong>From</strong><br>
+                        ${train.source_station_name || 'N/A'}<br>
+                        Sch: ${train.scheduled_arrival_time || 'N/A'}
                     </div>
                     <div class="bg-blue-100 p-2 rounded">
-                        <strong>Direction</strong><br>
-                        ${train.destination || 'N/A'}<br>
-                        ${train.expected_time || 'N/A'}
+                        <strong>To</strong><br>
+                        ${train.destination_station_name || 'N/A'}<br>
+                        Exp: ${train.expected_arrival_time || 'N/A'}
                     </div>
                 </div>
                 <div class="text-center mt-2">
@@ -528,3 +541,4 @@ document.addEventListener('keypress', function(e) {
         }
     }
 });
+
