@@ -187,19 +187,24 @@
                     </form>
                 </div>
             </div>
-
+            
             <div id="feedback" class="card p-6 col-span-1 md:col-span-2 lg:col-span-3">
-                 <h2 class="text-2xl font-bold mb-4">Citizen Feedback</h2>
+                <h2 class="text-2xl font-bold mb-4">Citizen Feedback</h2>
                 <p class="text-gray-600 mb-4">See an issue? Report it here and help us improve our city together.</p>
-                <form onsubmit="event.preventDefault(); alert('Thank you! Your report has been submitted.'); this.reset();">
+                
+                <form id="feedback-form">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <input type="text" placeholder="Your Name" class="p-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                        <select class="p-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                            <option>Pothole</option> <option>Broken Streetlight</option> <option>Waste Not Collected</option> <option>Other</option>
+                        <input type="text" id="feedback-name" placeholder="Your Name" class="p-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-emerald-500" required>
+                        <select id="feedback-issue-type" class="p-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option>Pothole</option>
+                            <option>Broken Streetlight</option>
+                            <option>Waste Not Collected</option>
+                            <option>Other</option>
                         </select>
                     </div>
-                    <textarea placeholder="Describe the issue..." rows="4" class="p-2 border border-gray-300 rounded-lg w-full mb-4 focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
+                    <textarea id="feedback-description" placeholder="Describe the issue..." rows="4" class="p-2 border border-gray-300 rounded-lg w-full mb-4 focus:outline-none focus:ring-2 focus:ring-emerald-500" required></textarea>
                     <button type="submit" class="bg-emerald-500 text-white px-6 py-2 rounded-lg hover:bg-emerald-600">Submit Report</button>
+                    <div id="feedback-response" class="mt-2"></div>
                 </form>
             </div>
         </div>

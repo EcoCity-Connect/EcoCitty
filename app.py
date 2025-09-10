@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 from flask_dance.contrib.google import make_google_blueprint, google
+import click
 
 load_dotenv()
 
@@ -13,7 +14,8 @@ CORS(app)
 
 # --- Configuration ---
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default-secret-key')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///ecocity.db?timeout=15'
+# Use PostgreSQL on Render and fallback to SQLite locally
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///ecocity.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Google OAuth Configuration
@@ -101,6 +103,7 @@ def logout():
 @app.route('/api/feedback', methods=['POST'])
 def handle_feedback():
     data = request.json
+    print(f"Received feedback data: {data}")  # Logging
     if not all(k in data for k in ['name', 'issue_type', 'description']):
         return jsonify({'error': 'Missing data'}), 400
 
@@ -111,63 +114,50 @@ def handle_feedback():
     )
     db.session.add(new_feedback)
     db.session.commit()
+    print("Feedback saved to database.")  # Logging
 
     return jsonify({'message': 'Feedback submitted successfully!'}), 201
 
-@app.route('/api/waste-reports', methods=['GET', 'POST'])
+@app.route('/api/waste-reports', methods=['POST'])
 def handle_waste_reports():
-    if request.method == 'POST':
-        data = request.json
-        if not all(k in data for k in ['location', 'waste_type', 'description']):
-            return jsonify({'error': 'Missing data'}), 400
-
-        new_report = WasteReport(
-            location=data['location'],
-            waste_type=data['waste_type'],
-            description=data['description']
-        )
-        db.session.add(new_report)
-        db.session.commit()
-        return jsonify({'message': 'Waste report submitted successfully!'}), 201
-    else:
-        reports = WasteReport.query.order_by(WasteReport.timestamp.desc()).all()
-        return jsonify([{'location': r.location, 'waste_type': r.waste_type, 'description': r.description} for r in reports])
-
-
-@app.route('/api/safety-hotspots', methods=['GET', 'POST'])
-def handle_safety_hotspots():
-    if request.method == 'POST':
-        data = request.json
-        if not all(k in data for k in ['location', 'issue_type', 'description']):
-            return jsonify({'error': 'Missing data'}), 400
-
-        new_hotspot = SafetyHotspot(
-            location=data['location'],
-            issue_type=data['issue_type'],
-            description=data['description']
-        )
-        db.session.add(new_hotspot)
-        db.session.commit()
-        return jsonify({'message': 'Safety hotspot reported successfully!'}), 201
-    else:
-        hotspots = SafetyHotspot.query.order_by(SafetyHotspot.timestamp.desc()).all()
-        return jsonify([{'location': h.location, 'issue_type': h.issue_type, 'description': h.description} for h in hotspots])
-
-@app.route('/api/calculate-carbon-footprint', methods=['POST'])
-def calculate_carbon_footprint():
     data = request.json
-    factors = {'electricity': 0.82, 'gas': 2.31, 'transport': 0.21}
-    
-    total_footprint = (
-        float(data.get('electricity', 0)) * factors['electricity'] +
-        float(data.get('gas', 0)) * factors['gas'] +
-        float(data.get('transport', 0)) * factors['transport']
-    )
-    
-    return jsonify({'carbon_footprint': round(total_footprint, 2)})
+    print(f"Received waste report data: {data}")  # Logging
+    if not all(k in data for k in ['location', 'waste_type', 'description']):
+        return jsonify({'error': 'Missing data'}), 400
 
+    new_report = WasteReport(
+        location=data['location'],
+        waste_type=data['waste_type'],
+        description=data['description']
+    )
+    db.session.add(new_report)
+    db.session.commit()
+    print("Waste report saved to database.")  # Logging
+    return jsonify({'message': 'Waste report submitted successfully!'}), 201
+
+@app.route('/api/safety-hotspots', methods=['POST'])
+def handle_safety_hotspots():
+    data = request.json
+    print(f"Received safety hotspot data: {data}")  # Logging
+    if not all(k in data for k in ['location', 'issue_type', 'description']):
+        return jsonify({'error': 'Missing data'}), 400
+
+    new_hotspot = SafetyHotspot(
+        location=data['location'],
+        issue_type=data['issue_type'],
+        description=data['description']
+    )
+    db.session.add(new_hotspot)
+    db.session.commit()
+    print("Safety hotspot saved to database.")  # Logging
+    return jsonify({'message': 'Safety hotspot reported successfully!'}), 201
+
+# --- Database CLI Command ---
+@app.cli.command("init-db")
+def init_db_command():
+    """Creates the database tables."""
+    db.create_all()
+    click.echo("Initialized the database.")
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
     app.run(debug=True, port=5000)

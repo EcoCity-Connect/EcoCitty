@@ -307,3 +307,34 @@ document.addEventListener('DOMContentLoaded', () => {
     setStaticAlert();
     setInterval(() => updateStationAQI(aqiSelector.value), 15000);
 });
+
+const feedbackForm = document.getElementById('feedback-form');
+if (feedbackForm) {
+    feedbackForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const feedbackResponseDiv = document.getElementById('feedback-response');
+        const formData = {
+            name: document.getElementById('feedback-name').value,
+            issue_type: document.getElementById('feedback-issue-type').value,
+            description: document.getElementById('feedback-description').value
+        };
+
+        fetch('/api/feedback', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                feedbackResponseDiv.innerHTML = `<p class="text-green-500">${data.message}</p>`;
+                feedbackForm.reset();
+            } else {
+                feedbackResponseDiv.innerHTML = `<p class="text-red-500">${data.error || 'An unknown error occurred.'}</p>`;
+            }
+        })
+        .catch((error) => {
+            feedbackResponseDiv.innerHTML = `<p class="text-red-500">An error occurred: ${error}</p>`;
+        });
+    });
+}
