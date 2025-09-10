@@ -46,12 +46,6 @@ class SafetyHotspot(db.Model):
     description = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
-class UserActivity(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(100), nullable=False)
-    login_time = db.Column(db.DateTime, default=datetime.utcnow)
-    time_spent_seconds = db.Column(db.Integer, default=0)
 
 # --- Google OAuth Blueprint ---
 google_bp = make_google_blueprint(
@@ -71,65 +65,17 @@ METRO_STATIONS = {
     'BLUE': ['Dwarka Sector 21', 'Dwarka Sector 8', 'Dwarka Sector 9', 'Dwarka Sector 10', 'Dwarka Sector 11', 'Dwarka Sector 12', 'Dwarka Sector 13', 'Dwarka Sector 14', 'Dwarka', 'Dwarka Mor', 'Nawada', 'Uttam Nagar West', 'Uttam Nagar East', 'Janakpuri West', 'Janakpuri East', 'Tilak Nagar', 'Subhash Nagar', 'Tagore Garden', 'Rajouri Garden', 'Ramesh Nagar', 'Moti Nagar', 'Kirti Nagar', 'Shadipur', 'Patel Nagar', 'Rajendra Place', 'Karol Bagh', 'Jhandewalan', 'R K Ashram Marg', 'Rajiv Chowk', 'Barakhamba Road', 'Mandi House', 'Supreme Court', 'Indraprastha', 'Yamuna Bank', 'Akshardham', 'Mayur Vihar-I', 'Mayur Vihar Ext', 'New Ashok Nagar', 'Noida Sector 15', 'Noida Sector 16', 'Noida Sector 18', 'Botanical Garden', 'Golf Course', 'Noida City Centre', 'Sector 34 Noida', 'Sector 52 Noida', 'Sector 61', 'Sector 59', 'Sector 62', 'Noida Electronic City'],
 }
 
+
 # --- Routes ---
 @app.route('/')
 def home():
-    user_info = None
-    if google.authorized:
-        try:
-            # Check if user info is already in session to avoid repeated API calls
-            if 'user_info' not in session:
-                resp = google.get("/oauth2/v2/userinfo")
-                if resp.ok:
-                    user_info = resp.json()
-                    session['user_info'] = user_info
-                    
-                    # Record the new login in the database
-                    new_login = UserActivity(
-                        name=user_info.get('name'),
-                        email=user_info.get('email')
-                    )
-                    db.session.add(new_login)
-                    db.session.commit()
-                    # Store the database record ID in the session for later updates
-                    session['user_activity_id'] = new_login.id
-            
-            user_info = session.get('user_info')
-            
-        except Exception as e:
-            print(f"Error fetching user info: {e}")
-            session.clear() # Clear session on error
-            return redirect(url_for('home'))
-
+    user_info = session.get('user_info')
     return render_template('index.html', user_info=user_info)
 
 @app.route('/logout')
 def logout():
-    # Clear the entire session to remove user info and OAuth tokens
-    session.clear()
+    session.pop('user_info', None)
     return redirect(url_for('home'))
-
-# New endpoint to update user's time spent
-@app.route('/api/update-session-time', methods=['POST'])
-def update_session_time():
-    data = request.json
-    session_id = data.get('session_id')
-    time_spent = data.get('time_spent')
-
-    if not session_id or time_spent is None:
-        return jsonify({'error': 'Missing session_id or time_spent'}), 400
-
-    try:
-        activity = UserActivity.query.get(session_id)
-        if activity:
-            activity.time_spent_seconds = time_spent
-            db.session.commit()
-            return jsonify({'message': 'Session time updated successfully'}), 200
-        else:
-            return jsonify({'error': 'Session not found'}), 404
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
 
 # --- API Routes ---
 
@@ -177,7 +123,7 @@ def handle_waste_reports():
         db.session.commit()
         return jsonify({'message': 'Waste report submitted successfully!'}), 201
     else:
-        reports = WasteReport.query.order_by(WasteReport.timestamp.desc()).all()
+        reports = WasteReport.query.all()
         return jsonify([{'location': r.location, 'waste_type': r.waste_type, 'description': r.description} for r in reports])
 
 
@@ -197,7 +143,7 @@ def handle_safety_hotspots():
         db.session.commit()
         return jsonify({'message': 'Safety hotspot reported successfully!'}), 201
     else:
-        hotspots = SafetyHotspot.query.order_by(SafetyHotspot.timestamp.desc()).all()
+        hotspots = SafetyHotspot.query.all()
         return jsonify([{'location': h.location, 'issue_type': h.issue_type, 'description': h.description} for h in hotspots])
 
 @app.route('/api/calculate-carbon-footprint', methods=['POST'])
