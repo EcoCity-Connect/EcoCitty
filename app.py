@@ -50,7 +50,8 @@ class UserActivity(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(100), nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    login_time = db.Column(db.DateTime, default=datetime.utcnow)
+    time_spent_seconds = db.Column(db.Integer, default=0)
 
 # --- Google OAuth Blueprint ---
 google_bp = make_google_blueprint(
@@ -69,7 +70,6 @@ METRO_STATIONS = {
     'YELLOW': ['Samaypur Badli', 'Rohini Sector 18,19', 'Haiderpur Badli Mor', 'Jahangirpuri', 'Adarsh Nagar', 'Azadpur', 'Model Town', 'GTB Nagar', 'Vishwavidyalaya', 'Vidhan Sabha', 'Civil Lines', 'Kashmere Gate', 'Chandni Chowk', 'Chawri Bazar', 'New Delhi', 'Rajiv Chowk', 'Patel Chowk', 'Central Secretariat', 'Udyog Bhawan', 'Lok Kalyan Marg', 'Jor Bagh', 'Dilli Haat - INA', 'AIIMS', 'Green Park', 'Hauz Khas', 'Malviya Nagar', 'Saket', 'Qutub Minar', 'Chhatarpur', 'Sultanpur', 'Ghitorni', 'Arjan Garh', 'Guru Dronacharya', 'Sikandarpur', 'MG Road', 'IFFCO Chowk', 'Huda City Centre'],
     'BLUE': ['Dwarka Sector 21', 'Dwarka Sector 8', 'Dwarka Sector 9', 'Dwarka Sector 10', 'Dwarka Sector 11', 'Dwarka Sector 12', 'Dwarka Sector 13', 'Dwarka Sector 14', 'Dwarka', 'Dwarka Mor', 'Nawada', 'Uttam Nagar West', 'Uttam Nagar East', 'Janakpuri West', 'Janakpuri East', 'Tilak Nagar', 'Subhash Nagar', 'Tagore Garden', 'Rajouri Garden', 'Ramesh Nagar', 'Moti Nagar', 'Kirti Nagar', 'Shadipur', 'Patel Nagar', 'Rajendra Place', 'Karol Bagh', 'Jhandewalan', 'R K Ashram Marg', 'Rajiv Chowk', 'Barakhamba Road', 'Mandi House', 'Supreme Court', 'Indraprastha', 'Yamuna Bank', 'Akshardham', 'Mayur Vihar-I', 'Mayur Vihar Ext', 'New Ashok Nagar', 'Noida Sector 15', 'Noida Sector 16', 'Noida Sector 18', 'Botanical Garden', 'Golf Course', 'Noida City Centre', 'Sector 34 Noida', 'Sector 52 Noida', 'Sector 61', 'Sector 59', 'Sector 62', 'Noida Electronic City'],
 }
-
 
 # --- Routes ---
 @app.route('/')
@@ -91,9 +91,11 @@ def home():
                     )
                     db.session.add(new_login)
                     db.session.commit()
+                    # Store the database record ID in the session for later updates
+                    session['user_activity_id'] = new_login.id
             
             user_info = session.get('user_info')
-
+            
         except Exception as e:
             print(f"Error fetching user info: {e}")
             session.clear() # Clear session on error
@@ -106,6 +108,28 @@ def logout():
     # Clear the entire session to remove user info and OAuth tokens
     session.clear()
     return redirect(url_for('home'))
+
+# New endpoint to update user's time spent
+@app.route('/api/update-session-time', methods=['POST'])
+def update_session_time():
+    data = request.json
+    session_id = data.get('session_id')
+    time_spent = data.get('time_spent')
+
+    if not session_id or time_spent is None:
+        return jsonify({'error': 'Missing session_id or time_spent'}), 400
+
+    try:
+        activity = UserActivity.query.get(session_id)
+        if activity:
+            activity.time_spent_seconds = time_spent
+            db.session.commit()
+            return jsonify({'message': 'Session time updated successfully'}), 200
+        else:
+            return jsonify({'error': 'Session not found'}), 404
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 # --- API Routes ---
 
@@ -195,4 +219,3 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
     app.run(debug=True, port=5000)
-
