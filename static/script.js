@@ -36,6 +36,26 @@ function initWasteManagement() {
     const wasteMap = L.map('waste-map').setView([28.6139, 77.2090], 12);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(wasteMap);
 
+    // --- START: FETCH AND DISPLAY GARBAGE TRUCKS ---
+    fetch('/api/garbage-collection')
+        .then(response => response.json())
+        .then(data => {
+            if (data.trucks) {
+                const truckIcon = L.icon({
+                    iconUrl: 'https://img.icons8.com/ios-filled/50/000000/garbage-truck.png', // A free garbage truck icon
+                    iconSize: [30, 30],
+                });
+
+                data.trucks.forEach(truck => {
+                    L.marker([truck.lat, truck.lon], { icon: truckIcon })
+                        .addTo(wasteMap)
+                        .bindPopup(`<b>${truck.id}</b><br>Status: ${truck.status}`);
+                });
+            }
+        })
+        .catch(error => console.error('Error fetching garbage collection data:', error));
+    // --- END: FETCH AND DISPLAY GARBAGE TRUCKS ---
+
     document.getElementById('waste-report-form').addEventListener('submit', e => {
         e.preventDefault();
         const responseDiv = document.getElementById('waste-response');

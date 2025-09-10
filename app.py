@@ -6,6 +6,7 @@ from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 from flask_dance.contrib.google import make_google_blueprint, google
 import random
+import requests # <-- ADD THIS LINE
 
 load_dotenv()
 
@@ -113,6 +114,25 @@ def get_garbage_trucks():
         })
     return jsonify(trucks)
 
+# --- START: NEW API ROUTE ---
+@app.route('/api/garbage-collection')
+def get_garbage_collection():
+    api_url = os.getenv('GARBAGE_COLLECTION_API_URL')
+    api_key = os.getenv('GARBAGE_COLLECTION_API_KEY')
+    
+    if not api_url or not api_key:
+        return jsonify({"error": "API URL or key not configured"}), 500
+        
+    try:
+        headers = {'Authorization': f'Bearer {api_key}'}
+        response = requests.get(api_url, headers=headers)
+        response.raise_for_status()  # Raise an exception for bad status codes
+        return jsonify(response.json())
+    except requests.exceptions.RequestException as e:
+        return jsonify({"error": str(e)}), 500
+# --- END: NEW API ROUTE ---
+
+
 @app.route('/api/metro-status')
 def metro_status():
     return jsonify({
@@ -197,4 +217,3 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
     app.run(debug=True, port=5000)
-
