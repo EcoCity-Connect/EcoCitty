@@ -46,6 +46,11 @@ class SafetyHotspot(db.Model):
     description = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
+class UserActivity(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(100), nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
 # --- Google OAuth Blueprint ---
 google_bp = make_google_blueprint(
@@ -69,12 +74,37 @@ METRO_STATIONS = {
 # --- Routes ---
 @app.route('/')
 def home():
-    user_info = session.get('user_info')
+    user_info = None
+    if google.authorized:
+        try:
+            # Check if user info is already in session to avoid repeated API calls
+            if 'user_info' not in session:
+                resp = google.get("/oauth2/v2/userinfo")
+                if resp.ok:
+                    user_info = resp.json()
+                    session['user_info'] = user_info
+                    
+                    # Record the new login in the database
+                    new_login = UserActivity(
+                        name=user_info.get('name'),
+                        email=user_info.get('email')
+                    )
+                    db.session.add(new_login)
+                    db.session.commit()
+            
+            user_info = session.get('user_info')
+
+        except Exception as e:
+            print(f"Error fetching user info: {e}")
+            session.clear() # Clear session on error
+            return redirect(url_for('home'))
+
     return render_template('index.html', user_info=user_info)
 
 @app.route('/logout')
 def logout():
-    session.pop('user_info', None)
+    # Clear the entire session to remove user info and OAuth tokens
+    session.clear()
     return redirect(url_for('home'))
 
 # --- API Routes ---
@@ -123,7 +153,7 @@ def handle_waste_reports():
         db.session.commit()
         return jsonify({'message': 'Waste report submitted successfully!'}), 201
     else:
-        reports = WasteReport.query.all()
+        reports = WasteReport.query.order_by(WasteReport.timestamp.desc()).all()
         return jsonify([{'location': r.location, 'waste_type': r.waste_type, 'description': r.description} for r in reports])
 
 
@@ -143,7 +173,7 @@ def handle_safety_hotspots():
         db.session.commit()
         return jsonify({'message': 'Safety hotspot reported successfully!'}), 201
     else:
-        hotspots = SafetyHotspot.query.all()
+        hotspots = SafetyHotspot.query.order_by(SafetyHotspot.timestamp.desc()).all()
         return jsonify([{'location': h.location, 'issue_type': h.issue_type, 'description': h.description} for h in hotspots])
 
 @app.route('/api/calculate-carbon-footprint', methods=['POST'])
@@ -165,3 +195,4 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
     app.run(debug=True, port=5000)
+
