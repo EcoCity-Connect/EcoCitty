@@ -4,195 +4,133 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EcoCity Connect</title>
-    
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/static/style.css">
 </head>
-<body class="text-gray-800">
+<body class="text-gray-800 bg-gray-50">
 
     <header class="bg-white shadow-md sticky top-0 z-50">
         <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
             <a href="#" class="text-2xl font-bold text-gray-800">
                 <span class="text-emerald-500">Eco</span>City Connect
             </a>
-            <div class="hidden md:flex space-x-6">
+            <div class="hidden md:flex items-center space-x-6">
                 <a href="#transport" class="nav-link text-gray-600">Transport</a>
+                <a href="#metro" class="nav-link text-gray-600">Metro</a>
                 <a href="#waste" class="nav-link text-gray-600">Waste</a>
-                <a href="#safety" class="nav-link text-gray-600">Green and Safe Spaces</a>
-                <a href="#aqi" class="nav-link text-gray-600">AQI</a>
-                <a href="#alerts" class="nav-link text-gray-600">Alerts</a>
+                <a href="#safety" class="nav-link text-gray-600">Safety</a>
                 <a href="#carbon" class="nav-link text-gray-600">Carbon Footprint</a>
                 <a href="#feedback" class="nav-link text-gray-600">Feedback</a>
+                
+                {% if user_info %}
+                <div class="flex items-center space-x-2">
+                    <img src="{{ user_info.picture }}" alt="User" class="w-8 h-8 rounded-full">
+                    <a href="/logout" class="bg-red-500 text-white px-4 py-2 rounded-lg text-sm">Logout</a>
+                </div>
+                {% else %}
+                <a href="{{ url_for('google.login') }}" class="bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm">Login with Google</a>
+                {% endif %}
             </div>
             <button class="md:hidden" id="mobile-menu-button">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
             </button>
         </nav>
-        <div class="hidden md:hidden" id="mobile-menu">
-            <a href="#transport" class="block py-2 px-4 text-sm hover:bg-gray-100">Transport</a>
-            <a href="#waste" class="block py-2 px-4 text-sm hover:bg-gray-100">Waste</a>
-            <a href="#safety" class="block py-2 px-4 text-sm hover:bg-gray-100">Green and Safe Spaces</a>
-            <a href="#aqi" class="block py-2 px-4 text-sm hover:bg-gray-100">AQI</a>
-            <a href="#alerts" class="block py-2 px-4 text-sm hover:bg-gray-100">Alerts</a>
-            <a href="#carbon" class="block py-2 px-4 text-sm hover:bg-gray-100">Carbon Footprint</a>
-            <a href="#feedback" class="block py-2 px-4 text-sm hover:bg-gray-100">Feedback</a>
-        </div>
     </header>
 
     <main class="container mx-auto px-6 py-12">
-        <section class="text-center mb-16">
-            <h1 class="text-4xl md:text-5xl font-bold mb-4">Smart Services for a Sustainable City</h1>
-            <p class="text-lg text-gray-600 max-w-3xl mx-auto">Real-time insights into your city's public services to help you live smarter and greener.</p>
+        
+        <section id="metro" class="card p-6 mb-12">
+            <h2 class="text-2xl font-bold mb-4">🚇 City Metro Live Tracker</h2>
+            <div class="flex flex-col lg:flex-row gap-4">
+                <div id="metro-map" class="flex-grow h-96 rounded-lg shadow-md"></div>
+                <div class="lg:w-1/3 bg-gray-50 p-4 rounded-lg shadow-inner">
+                    <h3 class="font-bold text-lg mb-2">Metro Line Status</h3>
+                    <div id="metro-results" class="space-y-3 max-h-80 overflow-y-auto"></div>
+                </div>
+            </div>
         </section>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div id="transport" class="card p-6 col-span-1 md:col-span-2 lg:col-span-3">
-                <h2 class="text-2xl font-bold mb-4">Real-time Public Transport Tracking</h2>
-                <div class="flex flex-col md:flex-row gap-4">
-                    <div class="flex-grow" id="map"></div>
-                    <div class="md:w-1/3 lg:w-1/4 bg-gray-50 p-4 rounded-lg">
-                        <h3 class="font-bold text-lg mb-2">Live Status</h3>
-                        <div id="transport-status-list" class="space-y-3">
-                            <p class="text-gray-500">Simulating live vehicle data...</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="aqi" class="card p-6 col-span-1 md:col-span-2 lg:col-span-2">
-                <h2 class="text-2xl font-bold mb-4">Air Quality Index (AQI)</h2>
-                <select id="aqi-station-selector" class="w-full p-2 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-emerald-500"></select>
-                <div id="selected-aqi-indicator" class="text-white text-center p-4 rounded-lg mb-4">
-                    <p class="text-5xl font-bold">---</p>
-                    <p class="font-semibold mt-1">---</p>
-                </div>
-                <div id="selected-aqi-advice" class="text-center text-gray-600">
-                    <p>Select a station to see the live AQI data.</p>
-                </div>
-                <p class="text-xs text-center text-gray-400 mt-4">Source: Central Pollution Control Board (CPCB)</p>
-            </div>
-            
-            <div id="alerts" class="card p-6 col-span-1 md:col-span-2 lg:col-span-1">
-                <h2 class="text-2xl font-bold mb-4">Disaster & Emergency Alerts</h2>
-                <div id="alert-content" class="p-4 rounded-lg min-h-[100px]">
-                    </div>
-                <p class="text-xs text-center text-gray-400 mt-4">Source: Indian Meteorological Department (IMD)</p>
-            </div>
-
-            <div id="waste" class="card p-6 col-span-1 md:col-span-2 lg:col-span-3">
-                <h2 class="text-2xl font-bold mb-4">Waste Management</h2>
-                <div class="flex flex-col lg:flex-row gap-8">
-                    <div class="flex-grow">
-                        <div id="wastemap"></div>
-                        <div class="mt-4">
-                            <p class="text-gray-600 mb-4">Find your neighborhood's collection days. Based on general MCD schedules.</p>
-                            <div class="flex space-x-2">
-                                <input type="text" id="neighborhood-input" placeholder="e.g., Karol Bagh, Saket" class="flex-grow p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                                <button id="search-waste-btn" class="bg-emerald-500 text-white px-4 py-2 rounded-lg hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">Search</button>
-                            </div>
-                            <div id="waste-results" class="mt-4 p-4 bg-gray-50 rounded-lg min-h-[100px]">
-                                <p class="text-gray-500">Enter a neighborhood to see the schedule.</p>
-                            </div>
-                        </div>
-                    </div>
-                    <form id="waste-report-form" class="lg:w-2/5 bg-gray-50 p-4 rounded-lg shadow-inner">
-                        <h3 class="font-bold text-lg mb-2">Report a Waste Issue</h3>
-                        <input type="text" id="waste-location" placeholder="Location (e.g., street name)" class="p-2 border rounded w-full mb-2" required>
-                        <select id="waste-type" class="p-2 border rounded w-full mb-2">
-                            <option>General Waste</option>
-                            <option>Recycling Bin Full</option>
-                            <option>Illegal Dumping</option>
-                        </select>
-                        <textarea id="waste-description" placeholder="Description..." rows="3" class="p-2 border rounded w-full mb-2" required></textarea>
-                        <button type="submit" class="bg-emerald-500 text-white px-4 py-2 rounded-lg">Submit Report</button>
-                        <div id="waste-response" class="mt-2"></div>
-                    </form>
-                </div>
-            </div>
-
-            <div id="carbon" class="card p-6 col-span-1 md:col-span-2 lg:col-span-3">
-                <h2 class="text-2xl font-bold mb-4">Carbon Footprint Calculator</h2>
-                <div class="bg-gray-50 p-6 rounded-lg">
-                    <div class="flex space-x-2 mb-4">
-                        <button class="tab-btn active" data-tab="commute">Commute</button>
-                        <button class="tab-btn" data-tab="energy">Domestic Energy Consumption</button>
-                    </div>
-                    <div id="commute" class="tab-content active grid-cols-1 md:grid-cols-3 gap-6">
-                        <div>
-                            <label for="distance" class="block text-sm font-medium text-gray-700">Daily Commute Distance (km)</label>
-                            <input type="number" id="distance" placeholder="e.g., 15" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
-                        </div>
-                        <div>
-                            <label for="transport-mode" class="block text-sm font-medium text-gray-700">Mode of Transport</label>
-                            <select id="transport-mode" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
-                                <option value="150">Car (Petrol)</option> <option value="40">Bus</option> <option value="21">Metro</option> <option value="110">Motorbike</option> <option value="0">Cycling</option> <option value="0">Walking</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div id="energy" class="tab-content grid-cols-1 md:grid-cols-2 gap-6">
-                       <div>
-                            <label for="electricity" class="block text-sm font-medium text-gray-700">Electricity (kWh/month)</label>
-                            <input type="number" id="electricity" placeholder="e.g., 250" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
-                        </div>
-                        <div>
-                            <label for="natural-gas" class="block text-sm font-medium text-gray-700">Natural Gas (Therms/month)</label>
-                            <input type="number" id="natural-gas" placeholder="e.g., 25" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
-                        </div>
-                    </div>
-                     <div class="mt-6 flex justify-center">
-                        <button id="calculate-carbon-btn" class="bg-emerald-500 text-white px-8 py-2 rounded-lg hover:bg-emerald-600">Calculate Total Footprint</button>
-                    </div>
-                    <div id="carbon-result" class="mt-6 text-center"></div>
-                </div>
-            </div>
-
-            <div id="safety" class="card p-6 col-span-1 md:col-span-2 lg:col-span-3">
-                <h2 class="text-2xl font-bold mb-4">Green and Safe Spaces</h2>
-                <p class="text-gray-600 mb-4">Discover parks, green spaces, and safe, well-lit routes for walking and cycling. You can also report a safety concern below.</p>
-                <div class="flex flex-col lg:flex-row gap-8">
-                    <div id="safetymap" class="flex-grow"></div>
-                    <form id="safety-hotspot-form" class="lg:w-2/5 bg-gray-50 p-4 rounded-lg shadow-inner">
-                        <h3 class="font-bold text-lg mb-2">Report a Safety Concern</h3>
-                        <input type="text" id="safety-location" placeholder="Location (e.g., intersection)" class="p-2 border rounded w-full mb-2" required>
-                        <select id="safety-issue-type" class="p-2 border rounded w-full mb-2">
-                            <option>Poor Lighting</option>
-                            <option>Vandalism</option>
-                            <option>Unsafe Road Condition</option>
-                        </select>
-                        <textarea id="safety-description" placeholder="Description..." rows="3" class="p-2 border rounded w-full mb-2" required></textarea>
-                        <button type="submit" class="bg-red-500 text-white px-4 py-2 rounded-lg">Report Hotspot</button>
-                        <div id="safety-response" class="mt-2"></div>
-                    </form>
-                </div>
-            </div>
-
-            <div id="feedback" class="card p-6 col-span-1 md:col-span-2 lg:col-span-3">
-                 <h2 class="text-2xl font-bold mb-4">Citizen Feedback</h2>
-                <p class="text-gray-600 mb-4">See an issue? Report it here and help us improve our city together.</p>
-                <form onsubmit="event.preventDefault(); alert('Thank you! Your report has been submitted.'); this.reset();">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <input type="text" placeholder="Your Name" class="p-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                        <select class="p-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                            <option>Pothole</option> <option>Broken Streetlight</option> <option>Waste Not Collected</option> <option>Other</option>
-                        </select>
-                    </div>
-                    <textarea placeholder="Describe the issue..." rows="4" class="p-2 border border-gray-300 rounded-lg w-full mb-4 focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
-                    <button type="submit" class="bg-emerald-500 text-white px-6 py-2 rounded-lg hover:bg-emerald-600">Submit Report</button>
+        <section id="waste" class="card p-6 mb-12">
+            <h2 class="text-2xl font-bold mb-4">♻️ Waste Management</h2>
+            <div class="flex flex-col lg:flex-row gap-4">
+                <div id="waste-map" class="flex-grow h-96 rounded-lg shadow-md"></div>
+                <form id="waste-report-form" class="lg:w-1/3 bg-gray-50 p-4 rounded-lg shadow-inner">
+                    <h3 class="font-bold text-lg mb-2">Report a Waste Issue</h3>
+                    <input type="text" id="waste-location" placeholder="Location (e.g., street name)" class="p-2 border rounded w-full mb-2" required>
+                    <select id="waste-type" class="p-2 border rounded w-full mb-2">
+                        <option>General Waste</option>
+                        <option>Recycling Bin Full</option>
+                        <option>Illegal Dumping</option>
+                    </select>
+                    <textarea id="waste-description" placeholder="Description..." rows="3" class="p-2 border rounded w-full mb-2" required></textarea>
+                    <button type="submit" class="bg-emerald-500 text-white px-4 py-2 rounded-lg">Submit Report</button>
+                    <div id="waste-response" class="mt-2"></div>
                 </form>
             </div>
-        </div>
+        </section>
+        
+        <section id="safety" class="card p-6 mb-12">
+            <h2 class="text-2xl font-bold mb-4">🛡️ Public Safety Hotspots</h2>
+            <div class="flex flex-col lg:flex-row gap-4">
+                <div id="safety-map" class="flex-grow h-96 rounded-lg shadow-md"></div>
+                <form id="safety-hotspot-form" class="lg:w-1/3 bg-gray-50 p-4 rounded-lg shadow-inner">
+                    <h3 class="font-bold text-lg mb-2">Report a Safety Concern</h3>
+                    <input type="text" id="safety-location" placeholder="Location (e.g., intersection)" class="p-2 border rounded w-full mb-2" required>
+                    <select id="safety-issue-type" class="p-2 border rounded w-full mb-2">
+                        <option>Poor Lighting</option>
+                        <option>Vandalism</option>
+                        <option>Unsafe Road Condition</option>
+                    </select>
+                    <textarea id="safety-description" placeholder="Description..." rows="3" class="p-2 border rounded w-full mb-2" required></textarea>
+                    <button type="submit" class="bg-red-500 text-white px-4 py-2 rounded-lg">Report Hotspot</button>
+                    <div id="safety-response" class="mt-2"></div>
+                </form>
+            </div>
+        </section>
+
+        <section id="carbon" class="card p-6 mb-12">
+            <h2 class="text-2xl font-bold mb-4">💨 Carbon Footprint Calculator</h2>
+            <form id="carbon-calculator-form" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="font-bold">Electricity (kWh/month)</label>
+                    <input type="number" id="carbon-electricity" class="p-2 border rounded w-full" value="250">
+                </div>
+                <div>
+                    <label class="font-bold">Natural Gas (therms/month)</label>
+                    <input type="number" id="carbon-gas" class="p-2 border rounded w-full" value="50">
+                </div>
+                <div>
+                    <label class="font-bold">Transport (km/month)</label>
+                    <input type="number" id="carbon-transport" class="p-2 border rounded w-full" value="300">
+                </div>
+                <div class="md:col-span-3 text-center">
+                    <button type="submit" class="bg-blue-500 text-white px-6 py-2 rounded-lg">Calculate</button>
+                    <div id="carbon-result" class="mt-4 text-xl font-bold"></div>
+                </div>
+            </form>
+        </section>
+
+        <section id="feedback" class="card p-6 mb-12">
+            <h2 class="text-2xl font-bold mb-4">Citizen Feedback</h2>
+            <form id="feedback-form">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <input type="text" id="feedback-name" placeholder="Your Name" class="p-2 border rounded w-full" required>
+                    <select id="feedback-issue-type" class="p-2 border rounded w-full">
+                        <option>Pothole</option>
+                        <option>Broken Streetlight</option>
+                        <option>Other</option>
+                    </select>
+                </div>
+                <textarea id="feedback-description" placeholder="Describe the issue..." rows="4" class="p-2 border rounded w-full mb-4" required></textarea>
+                <button type="submit" class="bg-emerald-500 text-white px-6 py-2 rounded-lg">Submit Feedback</button>
+            </form>
+            <div id="feedback-response" class="mt-4"></div>
+        </section>
+
     </main>
-
-    <footer class="bg-gray-800 text-white mt-16">
-        <div class="container mx-auto px-6 py-8 text-center">
-            <p>&copy; 2025 EcoCity Connect. Building sustainable communities together.</p>
-        </div>
-    </footer>
-
-    <script src="script.js"></script>
+    <script src="/static/script.js"></script>
 </body>
 </html>
