@@ -6,7 +6,7 @@ from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 from flask_dance.contrib.google import make_google_blueprint, google
 import random
-import requests # <-- ADD THIS LINE
+import requests # <-- Make sure this import is here
 
 load_dotenv()
 
@@ -15,8 +15,6 @@ CORS(app)
 
 # --- Configuration ---
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-# --- REFINEMENT: Added a timeout to the database connection ---
-# This helps prevent 'database is locked' errors by waiting up to 15 seconds.
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///ecocity.db?timeout=15'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -27,7 +25,7 @@ app.config['GOOGLE_OAUTH_CLIENT_SECRET'] = os.getenv('GOOGLE_OAUTH_CLIENT_SECRET
 
 db = SQLAlchemy(app)
 
-# --- Database Models ---
+# --- Database Models (collapsed for brevity) ---
 class Feedback(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
@@ -55,9 +53,7 @@ class UserActivity(db.Model):
     email = db.Column(db.String(100), nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
-# (The rest of the file remains the same)
-# ...
-# --- Google OAuth Blueprint ---
+# --- Google OAuth Blueprint (collapsed for brevity) ---
 google_bp = make_google_blueprint(
     scope=[
         "openid",
@@ -68,7 +64,7 @@ google_bp = make_google_blueprint(
 )
 app.register_blueprint(google_bp, url_prefix="/login")
 
-# --- Routes ---
+# --- Routes (collapsed for brevity) ---
 @app.route('/')
 def home():
     user_info = None
@@ -102,35 +98,51 @@ def logout():
     return redirect(url_for('home'))
 
 # --- API Routes ---
-@app.route('/api/garbage-trucks')
-def get_garbage_trucks():
-    trucks = []
-    for i in range(5):
-        trucks.append({
-            "id": f"TRUCK-{101 + i}",
-            "lat": 28.6139 + (random.uniform(-0.05, 0.05)),
-            "lon": 77.2090 + (random.uniform(-0.05, 0.05)),
-            "status": random.choice(["On Route", "Collecting", "Full"])
-        })
-    return jsonify(trucks)
 
-# --- START: NEW API ROUTE ---
+# --- START: MODIFIED API ROUTE ---
 @app.route('/api/garbage-collection')
 def get_garbage_collection():
     api_url = os.getenv('GARBAGE_COLLECTION_API_URL')
     api_key = os.getenv('GARBAGE_COLLECTION_API_KEY')
     
     if not api_url or not api_key:
-        return jsonify({"error": "API URL or key not configured"}), 500
+        return jsonify({"error": "API URL or key not configured in .env file"}), 500
         
     try:
-        headers = {'Authorization': f'Bearer {api_key}'}
-        response = requests.get(api_url, headers=headers)
-        response.raise_for_status()  # Raise an exception for bad status codes
-        return jsonify(response.json())
+        # Many public APIs pass the key as a parameter in the URL
+        params = {
+            'api-key': api_key,
+            'format': 'json',
+            'limit': 100  # Example parameter: get up to 100 records
+        }
+        response = requests.get(api_url, params=params)
+        response.raise_for_status()
+        
+        data = response.json()
+        trucks = []
+        
+        # --- IMPORTANT: DATA TRANSFORMATION ---
+        # You MUST check the actual structure of your API's response and adjust this section.
+        # I am assuming the data comes inside a "records" list. Your API might use a different key.
+        
+        api_records = data.get('records', []) # Change 'records' if your API uses a different key
+        
+        for record in api_records:
+            # Replace the keys ('vehicle_id', 'latitude', etc.) with the actual field names from your API.
+            trucks.append({
+                "id": record.get('vehicle_id', 'N/A'),
+                "lat": float(record.get('latitude', 0)),
+                "lon": float(record.get('longitude', 0)),
+                "status": record.get('current_status', 'Unknown')
+            })
+            
+        return jsonify({"trucks": trucks})
+        
     except requests.exceptions.RequestException as e:
-        return jsonify({"error": str(e)}), 500
-# --- END: NEW API ROUTE ---
+        return jsonify({"error": f"Could not fetch data from external API: {e}"}), 500
+    except (ValueError, KeyError) as e:
+         return jsonify({"error": f"Error processing API data. Check data transformation logic: {e}"}), 500
+# --- END: MODIFIED API ROUTE ---
 
 
 @app.route('/api/metro-status')
@@ -144,6 +156,7 @@ def metro_status():
         ]
     })
 
+# --- Other API routes (feedback, waste-reports, etc.) remain the same ---
 @app.route('/api/feedback', methods=['POST'])
 def handle_feedback():
     data = request.json
