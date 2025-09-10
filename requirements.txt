@@ -6,3 +6,5 @@ Werkzeug==2.3.7
 Flask-SQLAlchemy==3.0.3
 Flask-Dance==6.2.0
 gunicorn
+requests
+xmltodict

@@ -5,8 +5,8 @@ from dotenv import load_dotenv
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 from flask_dance.contrib.google import make_google_blueprint, google
-import random
-import requests # <-- Make sure this import is here
+import requests
+import xmltodict # <--- THIS LINE IS REQUIRED
 
 load_dotenv()
 
@@ -97,9 +97,10 @@ def logout():
     session.clear()
     return redirect(url_for('home'))
 
+
 # --- API Routes ---
 
-# --- START: MODIFIED API ROUTE ---
+# --- START: API ROUTE FOR XML DATA ---
 @app.route('/api/garbage-collection')
 def get_garbage_collection():
     api_url = os.getenv('GARBAGE_COLLECTION_API_URL')
@@ -109,42 +110,44 @@ def get_garbage_collection():
         return jsonify({"error": "API URL or key not configured in .env file"}), 500
         
     try:
-        # Many public APIs pass the key as a parameter in the URL
+        # Parameters to request XML data from the API
         params = {
             'api-key': api_key,
-            'format': 'json',
-            'limit': 100  # Example parameter: get up to 100 records
+            'format': 'xml',
+            'limit': 100 
         }
         response = requests.get(api_url, params=params)
         response.raise_for_status()
         
-        data = response.json()
+        # Convert the XML response to a Python dictionary
+        data = xmltodict.parse(response.content)
+        
         trucks = []
         
-        # --- IMPORTANT: DATA TRANSFORMATION ---
-        # You MUST check the actual structure of your API's response and adjust this section.
-        # I am assuming the data comes inside a "records" list. Your API might use a different key.
+        # Navigate through the parsed XML structure to find the records.
+        api_records = data.get('response', {}).get('data', {}).get('row', [])
         
-        api_records = data.get('records', []) # Change 'records' if your API uses a different key
-        
+        # Ensure api_records is a list, even if only one item is returned
+        if not isinstance(api_records, list):
+            api_records = [api_records]
+
         for record in api_records:
-            # Replace the keys ('vehicle_id', 'latitude', etc.) with the actual field names from your API.
             trucks.append({
-                "id": record.get('vehicle_id', 'N/A'),
-                "lat": float(record.get('latitude', 0)),
-                "lon": float(record.get('longitude', 0)),
-                "status": record.get('current_status', 'Unknown')
+                "id": record.get('@vehicleno', 'N/A'),
+                "lat": float(record.get('@_lat', 0)),
+                "lon": float(record.get('@_long', 0)),
+                "status": record.get('@speed', 'Unknown')
             })
             
         return jsonify({"trucks": trucks})
         
     except requests.exceptions.RequestException as e:
         return jsonify({"error": f"Could not fetch data from external API: {e}"}), 500
-    except (ValueError, KeyError) as e:
-         return jsonify({"error": f"Error processing API data. Check data transformation logic: {e}"}), 500
-# --- END: MODIFIED API ROUTE ---
+    except Exception as e:
+         return jsonify({"error": f"Error processing API data: {e}"}), 500
+# --- END: API ROUTE ---
 
-
+# ... (the rest of your API routes remain the same)
 @app.route('/api/metro-status')
 def metro_status():
     return jsonify({
@@ -156,7 +159,6 @@ def metro_status():
         ]
     })
 
-# --- Other API routes (feedback, waste-reports, etc.) remain the same ---
 @app.route('/api/feedback', methods=['POST'])
 def handle_feedback():
     data = request.json
