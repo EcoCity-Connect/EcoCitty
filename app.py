@@ -5,8 +5,6 @@ from dotenv import load_dotenv
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 from flask_dance.contrib.google import make_google_blueprint, google
-import requests
-import xmltodict # <--- THIS LINE IS REQUIRED
 
 load_dotenv()
 
@@ -14,7 +12,7 @@ app = Flask(__name__)
 CORS(app)
 
 # --- Configuration ---
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default-secret-key')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///ecocity.db?timeout=15'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -25,7 +23,7 @@ app.config['GOOGLE_OAUTH_CLIENT_SECRET'] = os.getenv('GOOGLE_OAUTH_CLIENT_SECRET
 
 db = SQLAlchemy(app)
 
-# --- Database Models (collapsed for brevity) ---
+# --- Database Models ---
 class Feedback(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
@@ -53,7 +51,7 @@ class UserActivity(db.Model):
     email = db.Column(db.String(100), nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
-# --- Google OAuth Blueprint (collapsed for brevity) ---
+# --- Google OAuth Blueprint ---
 google_bp = make_google_blueprint(
     scope=[
         "openid",
@@ -64,7 +62,7 @@ google_bp = make_google_blueprint(
 )
 app.register_blueprint(google_bp, url_prefix="/login")
 
-# --- Routes (collapsed for brevity) ---
+# --- Routes ---
 @app.route('/')
 def home():
     user_info = None
@@ -99,65 +97,6 @@ def logout():
 
 
 # --- API Routes ---
-
-# --- START: API ROUTE FOR XML DATA ---
-@app.route('/api/garbage-collection')
-def get_garbage_collection():
-    api_url = os.getenv('GARBAGE_COLLECTION_API_URL')
-    api_key = os.getenv('GARBAGE_COLLECTION_API_KEY')
-    
-    if not api_url or not api_key:
-        return jsonify({"error": "API URL or key not configured in .env file"}), 500
-        
-    try:
-        # Parameters to request XML data from the API
-        params = {
-            'api-key': api_key,
-            'format': 'xml',
-            'limit': 100 
-        }
-        response = requests.get(api_url, params=params)
-        response.raise_for_status()
-        
-        # Convert the XML response to a Python dictionary
-        data = xmltodict.parse(response.content)
-        
-        trucks = []
-        
-        # Navigate through the parsed XML structure to find the records.
-        api_records = data.get('response', {}).get('data', {}).get('row', [])
-        
-        # Ensure api_records is a list, even if only one item is returned
-        if not isinstance(api_records, list):
-            api_records = [api_records]
-
-        for record in api_records:
-            trucks.append({
-                "id": record.get('@vehicleno', 'N/A'),
-                "lat": float(record.get('@_lat', 0)),
-                "lon": float(record.get('@_long', 0)),
-                "status": record.get('@speed', 'Unknown')
-            })
-            
-        return jsonify({"trucks": trucks})
-        
-    except requests.exceptions.RequestException as e:
-        return jsonify({"error": f"Could not fetch data from external API: {e}"}), 500
-    except Exception as e:
-         return jsonify({"error": f"Error processing API data: {e}"}), 500
-# --- END: API ROUTE ---
-
-# ... (the rest of your API routes remain the same)
-@app.route('/api/metro-status')
-def metro_status():
-    return jsonify({
-        'status': True,
-        'data': [
-            {'line': 'RED', 'status': 'Normal', 'details': 'Running on time'},
-            {'line': 'YELLOW', 'status': 'Slow', 'details': 'Slow movement between Kashmere Gate and Rajiv Chowk'},
-            {'line': 'BLUE', 'status': 'Normal', 'details': 'Running on time'},
-        ]
-    })
 
 @app.route('/api/feedback', methods=['POST'])
 def handle_feedback():
