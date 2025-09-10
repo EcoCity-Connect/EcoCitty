@@ -19,7 +19,7 @@
             <a href="#" class="text-2xl font-bold text-gray-800">
                 <span class="text-emerald-500">Eco</span>City Connect
             </a>
-            <div class="hidden md:flex space-x-6">
+            <div class="hidden md:flex items-center space-x-6">
                 <a href="#transport" class="nav-link text-gray-600">Transport</a>
                 <a href="#waste" class="nav-link text-gray-600">Waste</a>
                 <a href="#safety" class="nav-link text-gray-600">Green and Safe Spaces</a>
@@ -27,6 +27,17 @@
                 <a href="#alerts" class="nav-link text-gray-600">Alerts</a>
                 <a href="#carbon" class="nav-link text-gray-600">Carbon Footprint</a>
                 <a href="#feedback" class="nav-link text-gray-600">Feedback</a>
+                
+                <div class="ml-4">
+                    {% if user_info %}
+                        <div class="flex items-center space-x-4">
+                            <span class="text-gray-700">Welcome, {{ user_info.name }}!</span>
+                            <a href="{{ url_for('logout') }}" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">Logout</a>
+                        </div>
+                    {% else %}
+                        <a href="{{ url_for('google.login') }}" class="bg-emerald-500 text-white px-4 py-2 rounded-lg hover:bg-emerald-600">Login with Google</a>
+                    {% endif %}
+                </div>
             </div>
             <button class="md:hidden" id="mobile-menu-button">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
@@ -40,6 +51,13 @@
             <a href="#alerts" class="block py-2 px-4 text-sm hover:bg-gray-100">Alerts</a>
             <a href="#carbon" class="block py-2 px-4 text-sm hover:bg-gray-100">Carbon Footprint</a>
             <a href="#feedback" class="block py-2 px-4 text-sm hover:bg-gray-100">Feedback</a>
+            <div class="py-2 px-4">
+                {% if user_info %}
+                    <a href="{{ url_for('logout') }}" class="w-full text-left bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">Logout</a>
+                {% else %}
+                    <a href="{{ url_for('google.login') }}" class="w-full text-left bg-emerald-500 text-white px-4 py-2 rounded-lg hover:bg-emerald-600">Login with Google</a>
+                {% endif %}
+            </div>
         </div>
     </header>
 
