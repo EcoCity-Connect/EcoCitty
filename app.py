@@ -14,11 +14,13 @@ CORS(app)
 
 # --- Configuration ---
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///ecocity.db'
+# --- REFINEMENT: Added a timeout to the database connection ---
+# This helps prevent 'database is locked' errors by waiting up to 15 seconds.
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///ecocity.db?timeout=15'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Google OAuth Configuration
-os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'  # For development only!
+os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 app.config['GOOGLE_OAUTH_CLIENT_ID'] = os.getenv('GOOGLE_OAUTH_CLIENT_ID')
 app.config['GOOGLE_OAUTH_CLIENT_SECRET'] = os.getenv('GOOGLE_OAUTH_CLIENT_SECRET')
 
@@ -46,7 +48,14 @@ class SafetyHotspot(db.Model):
     description = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
+class UserActivity(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(100), nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
+# (The rest of the file remains the same)
+# ...
 # --- Google OAuth Blueprint ---
 google_bp = make_google_blueprint(
     scope=[
@@ -58,30 +67,54 @@ google_bp = make_google_blueprint(
 )
 app.register_blueprint(google_bp, url_prefix="/login")
 
-# --- Metro Data (Mock) ---
-METRO_STATIONS = {
-    'RED': ['Rithala', 'Rohini West', 'Rohini East', 'Pitampura', 'Kohat Enclave', 'Netaji Subhash Place', 'Keshav Puram', 'Kanhaiya Nagar', 'Inderlok', 'Shastri Nagar', 'Pratap Nagar', 'Pulbangash', 'Tis Hazari', 'Kashmere Gate', 'Shastri Park', 'Seelampur', 'Welcome', 'Shahdara', 'Mansarovar Park', 'Jhilmil', 'Dilshad Garden', 'Shaheed Nagar', 'Raj Bagh', 'Mohan Nagar', 'Arthala', 'Hindon River', 'Shaheed Sthal'],
-    'YELLOW': ['Samaypur Badli', 'Rohini Sector 18,19', 'Haiderpur Badli Mor', 'Jahangirpuri', 'Adarsh Nagar', 'Azadpur', 'Model Town', 'GTB Nagar', 'Vishwavidyalaya', 'Vidhan Sabha', 'Civil Lines', 'Kashmere Gate', 'Chandni Chowk', 'Chawri Bazar', 'New Delhi', 'Rajiv Chowk', 'Patel Chowk', 'Central Secretariat', 'Udyog Bhawan', 'Lok Kalyan Marg', 'Jor Bagh', 'Dilli Haat - INA', 'AIIMS', 'Green Park', 'Hauz Khas', 'Malviya Nagar', 'Saket', 'Qutub Minar', 'Chhatarpur', 'Sultanpur', 'Ghitorni', 'Arjan Garh', 'Guru Dronacharya', 'Sikandarpur', 'MG Road', 'IFFCO Chowk', 'Huda City Centre'],
-    'BLUE': ['Dwarka Sector 21', 'Dwarka Sector 8', 'Dwarka Sector 9', 'Dwarka Sector 10', 'Dwarka Sector 11', 'Dwarka Sector 12', 'Dwarka Sector 13', 'Dwarka Sector 14', 'Dwarka', 'Dwarka Mor', 'Nawada', 'Uttam Nagar West', 'Uttam Nagar East', 'Janakpuri West', 'Janakpuri East', 'Tilak Nagar', 'Subhash Nagar', 'Tagore Garden', 'Rajouri Garden', 'Ramesh Nagar', 'Moti Nagar', 'Kirti Nagar', 'Shadipur', 'Patel Nagar', 'Rajendra Place', 'Karol Bagh', 'Jhandewalan', 'R K Ashram Marg', 'Rajiv Chowk', 'Barakhamba Road', 'Mandi House', 'Supreme Court', 'Indraprastha', 'Yamuna Bank', 'Akshardham', 'Mayur Vihar-I', 'Mayur Vihar Ext', 'New Ashok Nagar', 'Noida Sector 15', 'Noida Sector 16', 'Noida Sector 18', 'Botanical Garden', 'Golf Course', 'Noida City Centre', 'Sector 34 Noida', 'Sector 52 Noida', 'Sector 61', 'Sector 59', 'Sector 62', 'Noida Electronic City'],
-}
-
-
 # --- Routes ---
 @app.route('/')
 def home():
-    user_info = session.get('user_info')
+    user_info = None
+    if google.authorized:
+        try:
+            if 'user_info' not in session:
+                resp = google.get("/oauth2/v2/userinfo")
+                if resp.ok:
+                    user_info = resp.json()
+                    session['user_info'] = user_info
+                    
+                    new_login = UserActivity(
+                        name=user_info.get('name'),
+                        email=user_info.get('email')
+                    )
+                    db.session.add(new_login)
+                    db.session.commit()
+            
+            user_info = session.get('user_info')
+
+        except Exception as e:
+            print(f"Error fetching user info: {e}")
+            session.clear()
+            return redirect(url_for('home'))
+
     return render_template('index.html', user_info=user_info)
 
 @app.route('/logout')
 def logout():
-    session.pop('user_info', None)
+    session.clear()
     return redirect(url_for('home'))
 
 # --- API Routes ---
+@app.route('/api/garbage-trucks')
+def get_garbage_trucks():
+    trucks = []
+    for i in range(5):
+        trucks.append({
+            "id": f"TRUCK-{101 + i}",
+            "lat": 28.6139 + (random.uniform(-0.05, 0.05)),
+            "lon": 77.2090 + (random.uniform(-0.05, 0.05)),
+            "status": random.choice(["On Route", "Collecting", "Full"])
+        })
+    return jsonify(trucks)
 
 @app.route('/api/metro-status')
 def metro_status():
-    """Get live status of metro lines (mock data)."""
     return jsonify({
         'status': True,
         'data': [
@@ -123,7 +156,7 @@ def handle_waste_reports():
         db.session.commit()
         return jsonify({'message': 'Waste report submitted successfully!'}), 201
     else:
-        reports = WasteReport.query.all()
+        reports = WasteReport.query.order_by(WasteReport.timestamp.desc()).all()
         return jsonify([{'location': r.location, 'waste_type': r.waste_type, 'description': r.description} for r in reports])
 
 
@@ -143,13 +176,12 @@ def handle_safety_hotspots():
         db.session.commit()
         return jsonify({'message': 'Safety hotspot reported successfully!'}), 201
     else:
-        hotspots = SafetyHotspot.query.all()
+        hotspots = SafetyHotspot.query.order_by(SafetyHotspot.timestamp.desc()).all()
         return jsonify([{'location': h.location, 'issue_type': h.issue_type, 'description': h.description} for h in hotspots])
 
 @app.route('/api/calculate-carbon-footprint', methods=['POST'])
 def calculate_carbon_footprint():
     data = request.json
-    # Factors are simplified for demonstration
     factors = {'electricity': 0.82, 'gas': 2.31, 'transport': 0.21}
     
     total_footprint = (
@@ -165,3 +197,4 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
     app.run(debug=True, port=5000)
+
