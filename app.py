@@ -6,6 +6,7 @@ from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 from flask_dance.contrib.google import make_google_blueprint, google
 import random
+import requests # NEW: Import the requests library
 
 load_dotenv()
 
@@ -121,6 +122,61 @@ def metro_status():
         ]
     })
 
+# NEW: API endpoint to fetch air quality using an external API key
+@app.route('/api/air-quality')
+def get_air_quality():
+    """Fetch air quality data from an external API."""
+    city = request.args.get('city')
+    api_key = os.getenv('WEATHER_API_KEY')
+
+    if not city:
+        return jsonify({'error': 'City parameter is required'}), 400
+    if not api_key:
+        return jsonify({'error': 'API key is not configured'}), 500
+
+    # This example uses a simplified lookup. A real app would use a geocoding API.
+    locations = {
+        'delhi': {'lat': 28.7041, 'lon': 77.1025},
+        'mumbai': {'lat': 19.0760, 'lon': 72.8777},
+        'punjab': {'lat': 30.7333, 'lon': 76.7794} # Added for Jansla, Punjab area
+    }
+    
+    location = locations.get(city.lower())
+    if not location:
+        return jsonify({'error': 'City not found'}), 404
+
+    lat = location['lat']
+    lon = location['lon']
+    
+    # Construct the URL for the OpenWeatherMap Air Pollution API
+    url = f"http://api.openweathermap.org/data/2.5/air_pollution?lat={lat}&lon={lon}&appid={api_key}"
+    
+    try:
+        response = requests.get(url)
+        response.raise_for_status()  # Raise an exception for bad status codes (4xx or 5xx)
+        data = response.json()
+        
+        # Simplify the response to send to the client
+        aqi_data = data.get('list', [{}])[0]
+        aqi_index = aqi_data.get('main', {}).get('aqi')
+        components = aqi_data.get('components', {})
+
+        # Map AQI index to a human-readable quality level
+        quality_map = {1: 'Good', 2: 'Fair', 3: 'Moderate', 4: 'Poor', 5: 'Very Poor'}
+
+        return jsonify({
+            'city': city,
+            'aqi': aqi_index,
+            'quality': quality_map.get(aqi_index, 'Unknown'),
+            'components': components
+        })
+
+    except requests.exceptions.RequestException as e:
+        return jsonify({'error': f'Failed to retrieve data from external API: {e}'}), 502
+    except Exception as e:
+        return jsonify({'error': f'An unexpected error occurred: {e}'}), 500
+
+
 @app.route('/api/feedback', methods=['POST'])
 def handle_feedback():
     data = request.json
@@ -195,4 +251,3 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
     app.run(debug=True, port=5000)
-
