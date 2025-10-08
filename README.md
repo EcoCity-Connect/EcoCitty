@@ -244,7 +244,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 | S.No | Name | Email | LinkedIn |
 |------|------|-------|----------|
-| 1 | Piyush Sharma | piyush3183.beai25@chitkara.edu,in | [LinkedIn](https://www.linkedin.com/in/piyushcodes7) |
+| 1 | Piyush Sharma | piyush3183.beai25@chitkara.edu.in | [LinkedIn](https://www.linkedin.com/in/piyushcodes7) |
 | 2 | Govind Jindal | govind3091.beai25@chitkara.edu.in | [LinkedIn](https://www.linkedin.com/in/govind-jindal-62925b361) |
 | 3 | Bhavishya Grover | bhavishya3095.beai25@chitkara.edu.in | [LinkedIn](https://www.linkedin.com/in/bhavishya-grover-39051b382)|
 
