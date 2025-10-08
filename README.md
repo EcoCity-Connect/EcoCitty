@@ -240,13 +240,13 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-## 📝 License
+### Team Members
 
-This project is open source and available under the [MIT License](LICENSE).
-
-## 👥 Authors
-
-- Your Name - Initial work
+| S.No | Name | Email | LinkedIn |
+|------|------|-------|----------|
+| 1 | Piyush Sharma | piyush3183.beai25@chitkara.edu,in | [LinkedIn](https://www.linkedin.com/in/piyushcodes7) |
+| 2 | Govind Jindal | govind3091.beai25@chitkara.edu.in | [LinkedIn](https://www.linkedin.com/in/govind-jindal-62925b361) |
+| 3 | Bhavishya Grover | bhavishya3095.beai25@chitkara.edu.in | [LinkedIn](https://www.linkedin.com/in/bhavishya-grover-39051b382)|
 
 ## 🙏 Acknowledgments
 
@@ -256,9 +256,6 @@ This project is open source and available under the [MIT License](LICENSE).
 - Indian Meteorological Department (IMD) for weather alerts
 - Delhi Metro Rail Corporation for metro route information
 
-## 📧 Contact
-
-For questions or support, please contact: your.email@example.com
 
 ## 🔮 Future Enhancements
 
